@@ -11,7 +11,7 @@ public class FollowPlayerButton : GorillaPressableButton
     private const float RotationSmooth   = 0.24f;
     private const float RotBoostMax      = 2.4f;
 
-    private Transform bodyTransform;
+    private Transform headTransform;
 
     private bool      followPlayer;
     private Transform goatModelTransform;
@@ -32,27 +32,27 @@ public class FollowPlayerButton : GorillaPressableButton
             goatModelTransform = goatModel.transform;
 
         if (GTPlayer.Instance != null)
-            bodyTransform = GTPlayer.Instance.bodyCollider.transform;
+            headTransform = GTPlayer.Instance.headCollider.transform;
     }
 
     private void LateUpdate()
     {
-        if (!followPlayer || goatModelTransform == null || bodyTransform == null)
+        if (!followPlayer || goatModelTransform == null || headTransform == null)
             return;
 
-        Vector3 toPlayer = bodyTransform.position - goatModelTransform.position;
+        Vector3 toPlayer = headTransform.position - goatModelTransform.position;
         float   distance = toPlayer.magnitude;
 
         float t          = Mathf.Clamp01(distance                    / MaxLeashDistance);
         float smoothTime = Mathf.Lerp(PositionSmooth, PositionSmooth * 0.2f, t * t);
 
-        Vector3 targetPos;
-        if (distance > MaxLeashDistance)
-            targetPos = bodyTransform.position - toPlayer.normalized * MaxLeashDistance;
-        else if (distance < MinDistance)
-            targetPos = goatModelTransform.position;
-        else
-            targetPos = bodyTransform.position;
+        Vector3 targetPos = distance switch
+                            {
+                                    > MaxLeashDistance => headTransform.position -
+                                                          toPlayer.normalized * MaxLeashDistance,
+                                    < MinDistance => goatModelTransform.position,
+                                    var _         => headTransform.position,
+                            };
 
         goatModelTransform.position = Vector3.SmoothDamp(
                 goatModelTransform.position,
@@ -61,7 +61,7 @@ public class FollowPlayerButton : GorillaPressableButton
                 smoothTime
         );
 
-        Vector3 lookDir = bodyTransform.position - goatModelTransform.position;
+        Vector3 lookDir = headTransform.position - goatModelTransform.position;
 
         if (lookDir == Vector3.zero)
             return;
