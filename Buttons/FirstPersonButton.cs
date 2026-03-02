@@ -31,6 +31,10 @@ public class FirstPersonButton : GorillaPressableButton
     private new Material   pressedMaterial;
     private     Quaternion targetRotation;
     private new Material   unpressedMaterial;
+    
+    public static FirstPersonButton Instance { get; private set; }
+
+    private void Awake() => Instance = this;
 
     public void Start()
     {
@@ -62,13 +66,8 @@ public class FirstPersonButton : GorillaPressableButton
         cam.transform.rotation = Quaternion.Lerp(cam.transform.rotation, targetRotation, smoothing * Time.deltaTime);
     }
 
-    public override void ButtonActivation()
+    public void ToggleFirstPerson()
     {
-        base.ButtonActivation();
-
-        isOn = !isOn;
-        UpdateColor();
-
         if (goatCamModObject != null)
             goatCamModObject.transform.position = Vector3.zero;
 
@@ -114,6 +113,13 @@ public class FirstPersonButton : GorillaPressableButton
         {
             DisableFirstPerson();
         }
+    }
+
+    public override void ButtonActivation()
+    {
+        base.ButtonActivation();
+
+        ToggleFirstPerson();
     }
 
     public void DisableFirstPerson()

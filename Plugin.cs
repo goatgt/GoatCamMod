@@ -4,6 +4,7 @@ using BepInEx;
 using GoatCamMod.Tools;
 using Unity.Cinemachine;
 using UnityEngine;
+using UnityEngine.XR;
 
 namespace GoatCamMod;
 
@@ -150,6 +151,10 @@ public class Plugin : BaseUnityPlugin
             }
 
             Debug.Log("[GoatCam]: Desktop camera fully synced to GoatCam.");
+
+            //Starts in first person when not on vr so you can play on pc
+            if (!XRSettings.isDeviceActive)
+                FirstPersonButton.Instance.ToggleFirstPerson();
         }
         catch (Exception e)
         {
