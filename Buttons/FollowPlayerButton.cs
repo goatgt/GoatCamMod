@@ -5,12 +5,17 @@ namespace GoatCamMod;
 
 public class FollowPlayerButton : GorillaPressableButton
 {
-    private const float     PositionSmooth = 0.12f;
-    private const float     RotationSmooth = 0.18f;
-    private       Transform bodyTransform;
+    private const float MaxLeashDistance = 3.8f;
+    private const float MinDistance      = 1.5f;
+    private const float PositionSmooth   = 0.55f;
+    private const float RotationSmooth   = 0.24f;
+    private const float RotBoostMax      = 2.4f;
+
+    private Transform bodyTransform;
 
     private bool      followPlayer;
     private Transform goatModelTransform;
+    private Vector3   positionVelocity;
 
     private void Start()
     {
@@ -35,38 +40,51 @@ public class FollowPlayerButton : GorillaPressableButton
         if (!followPlayer || goatModelTransform == null || bodyTransform == null)
             return;
 
-        //Sorry if this isn't what you intended, but I've had people tell me they wanted it to follow their position and not just make the camera look at it
-        Vector3 targetPosition = new(
-                bodyTransform.position.x,
-                bodyTransform.position.y,
-                bodyTransform.position.z
-        );
+        Vector3 toPlayer = bodyTransform.position - goatModelTransform.position;
+        float   distance = toPlayer.magnitude;
 
-        goatModelTransform.position = Vector3.Lerp(
+        float t          = Mathf.Clamp01(distance                    / MaxLeashDistance);
+        float smoothTime = Mathf.Lerp(PositionSmooth, PositionSmooth * 0.2f, t * t);
+
+        Vector3 targetPos;
+        if (distance > MaxLeashDistance)
+            targetPos = bodyTransform.position - toPlayer.normalized * MaxLeashDistance;
+        else if (distance < MinDistance)
+            targetPos = goatModelTransform.position;
+        else
+            targetPos = bodyTransform.position;
+
+        goatModelTransform.position = Vector3.SmoothDamp(
                 goatModelTransform.position,
-                targetPosition,
-                PositionSmooth
+                targetPos,
+                ref positionVelocity,
+                smoothTime
         );
 
-        Vector3 directionToPlayer = bodyTransform.position - goatModelTransform.position;
-        directionToPlayer.y = 0f;
+        Vector3 lookDir = bodyTransform.position - goatModelTransform.position;
 
-        if (directionToPlayer == Vector3.zero)
+        if (lookDir == Vector3.zero)
             return;
 
-        Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer.normalized);
+        float      rotBoost        = Mathf.Lerp(1f, RotBoostMax, Mathf.Clamp01(distance / MaxLeashDistance));
+        float      rotSmoothFactor = Mathf.Clamp01(RotationSmooth * rotBoost * (Time.deltaTime / 0.02f));
+        Quaternion targetRotation  = Quaternion.LookRotation(lookDir.normalized);
+
         goatModelTransform.rotation = Quaternion.Slerp(
                 goatModelTransform.rotation,
                 targetRotation,
-                RotationSmooth
+                rotSmoothFactor
         );
     }
 
     public override void ButtonActivation()
     {
         followPlayer = !followPlayer;
+        isOn         = followPlayer;
 
-        isOn = followPlayer;
+        if (!followPlayer)
+            positionVelocity = Vector3.zero;
+
         UpdateColor();
     }
 }

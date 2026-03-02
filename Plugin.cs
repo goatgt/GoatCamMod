@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Globalization;
 using System.Threading.Tasks;
 using BepInEx;
 using GoatCamMod.Tools;
+using TMPro;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.XR;
@@ -138,6 +140,9 @@ public class Plugin : BaseUnityPlugin
             shoulderCamObj.transform.SetParent(goatCam.transform);
             shoulderCamObj.transform.localPosition = Vector3.zero;
             shoulderCamObj.transform.localRotation = Quaternion.identity;
+            
+            goatCam.fieldOfView = 95f;
+            GameObject.Find("Sample Textmesh (9)").GetComponent<TextMesh>().text = goatCam.fieldOfView.ToString(CultureInfo.CurrentCulture);
 
             GameObject lckWallCameraSpawner = GameObject.Find("LCKWallCameraSpawner");
             if (lckWallCameraSpawner != null)
