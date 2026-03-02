@@ -1,74 +1,90 @@
-﻿using UnityEngine;
-using GorillaLocomotion;
+﻿using GorillaLocomotion;
+using UnityEngine;
 
-namespace GoatCamMod
+namespace GoatCamMod;
+
+public class FollowPlayerButton : GorillaPressableButton
 {
-    public class followplayerbutton : GorillaPressableButton
+    private const float MaxLeashDistance = 3.8f;
+    private const float MinDistance      = 1.5f;
+    private const float PositionSmooth   = 0.55f;
+    private const float RotationSmooth   = 0.24f;
+    private const float RotBoostMax      = 2.4f;
+
+    private Transform headTransform;
+
+    private bool      followPlayer;
+    private Transform goatModelTransform;
+    private Vector3   positionVelocity;
+
+    private void Start()
     {
-        private Transform goatModelTransform;
-        private Transform bodyTransform;
+        gameObject.layer = 18;
 
-        private bool followPlayer = false;
-        private float positionSmooth = 0.12f;
-        private float rotationSmooth = 0.18f;
+        buttonRenderer = GetComponent<MeshRenderer>();
+        Material unpressedMat = new(buttonRenderer.material) { color = Color.white, };
+        Material pressedMat   = new(buttonRenderer.material) { color = Color.red, };
+        unpressedMaterial = unpressedMat;
+        pressedMaterial   = pressedMat;
 
-        public override void ButtonActivation()
-        {
-            followPlayer = !followPlayer;
+        GameObject goatModel = GameObject.Find("GoatCameraModModelBetter(Clone)");
+        if (goatModel != null)
+            goatModelTransform = goatModel.transform;
 
-            isOn = followPlayer;
-            UpdateColor();
-        }
+        if (GTPlayer.Instance != null)
+            headTransform = GTPlayer.Instance.headCollider.transform;
+    }
 
-        private void Start()
-        {
-            gameObject.layer = 18;
+    private void LateUpdate()
+    {
+        if (!followPlayer || goatModelTransform == null || headTransform == null)
+            return;
 
-            buttonRenderer = GetComponent<MeshRenderer>();
-            Material unpressedMat = new Material(buttonRenderer.material) { color = Color.white };
-            Material pressedMat = new Material(buttonRenderer.material) { color = Color.red };
-            unpressedMaterial = unpressedMat;
-            pressedMaterial = pressedMat;
+        Vector3 toPlayer = headTransform.position - goatModelTransform.position;
+        float   distance = toPlayer.magnitude;
 
-            GameObject goatModel = GameObject.Find("GoatCameraModModelBetter(Clone)");
-            if (goatModel != null)
-                goatModelTransform = goatModel.transform;
+        float t          = Mathf.Clamp01(distance                    / MaxLeashDistance);
+        float smoothTime = Mathf.Lerp(PositionSmooth, PositionSmooth * 0.2f, t * t);
 
-            if (GTPlayer.Instance != null)
-                bodyTransform = GTPlayer.Instance.bodyCollider.transform;
-        }
+        Vector3 targetPos = distance switch
+                            {
+                                    > MaxLeashDistance => headTransform.position -
+                                                          toPlayer.normalized * MaxLeashDistance,
+                                    < MinDistance => goatModelTransform.position,
+                                    var _         => headTransform.position,
+                            };
 
-        private void LateUpdate()
-        {
-            if (!followPlayer || goatModelTransform == null || bodyTransform == null)
-                return;
-
-            // Keep X/Z position fixed, only follow Y (vertical)
-            Vector3 targetPosition = new Vector3(
-                goatModelTransform.position.x,       // stay in same X
-                bodyTransform.position.y,            // follow player's Y
-                goatModelTransform.position.z        // stay in same Z
-            );
-
-            goatModelTransform.position = Vector3.Lerp(
+        goatModelTransform.position = Vector3.SmoothDamp(
                 goatModelTransform.position,
-                targetPosition,
-                positionSmooth
-            );
+                targetPos,
+                ref positionVelocity,
+                smoothTime
+        );
 
-            // Rotate to look at player
-            Vector3 directionToPlayer = bodyTransform.position - goatModelTransform.position;
-            directionToPlayer.y = 0f; // keep rotation only horizontal (optional, remove if you want full tilt)
+        Vector3 lookDir = headTransform.position - goatModelTransform.position;
 
-            if (directionToPlayer != Vector3.zero)
-            {
-                Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer.normalized);
-                goatModelTransform.rotation = Quaternion.Slerp(
-                    goatModelTransform.rotation,
-                    targetRotation,
-                    rotationSmooth
-                );
-            }
-        }
+        if (lookDir == Vector3.zero)
+            return;
+
+        float      rotBoost        = Mathf.Lerp(1f, RotBoostMax, Mathf.Clamp01(distance / MaxLeashDistance));
+        float      rotSmoothFactor = Mathf.Clamp01(RotationSmooth * rotBoost * (Time.deltaTime / 0.02f));
+        Quaternion targetRotation  = Quaternion.LookRotation(lookDir.normalized);
+
+        goatModelTransform.rotation = Quaternion.Slerp(
+                goatModelTransform.rotation,
+                targetRotation,
+                rotSmoothFactor
+        );
+    }
+
+    public override void ButtonActivation()
+    {
+        followPlayer = !followPlayer;
+        isOn         = followPlayer;
+
+        if (!followPlayer)
+            positionVelocity = Vector3.zero;
+
+        UpdateColor();
     }
 }

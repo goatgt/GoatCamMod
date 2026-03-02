@@ -1,182 +1,185 @@
-﻿using UnityEngine;
+﻿using System;
 using GorillaLocomotion;
+using UnityEngine;
 
-namespace GoatCamMod
+namespace GoatCamMod;
+
+public class FirstPersonButton : GorillaPressableButton
 {
-    public class firstpersonbutton : GorillaPressableButton
+    public enum SmoothingMode
     {
-        private Camera cam;
-        private bool isFirstPerson = false;
+        Low,
+        Medium,
+        High,
+    }
 
-        private GameObject gorillaFace;
-        private GameObject goatCamModObject;
+    public static  SmoothingMode currentMode = SmoothingMode.Low;
+    private static TextMesh      smoothingText;
 
-        public enum SmoothingMode
+    private MeshRenderer buttonRenderer;
+    private Camera       cam;
+    private GameObject   goatCamModObject;
+
+    private Transform head;
+    private bool      isFirstPerson;
+
+    public  Action     OnFirstPersonPressed;
+    private Vector3    originalLocalPosition;
+    private Quaternion originalLocalRotation;
+
+    private     Transform  originalParent;
+    private new Material   pressedMaterial;
+    private     Quaternion targetRotation;
+    private new Material   unpressedMaterial;
+    
+    public static FirstPersonButton Instance { get; private set; }
+
+    private void Awake() => Instance = this;
+
+    public void Start()
+    {
+        gameObject.layer = 18;
+
+        goatCamModObject = GameObject.Find("GoatCameraModModelBetter(Clone)");
+
+        GameObject textObj = GameObject.Find("Sample Textmesh (29)");
+        if (textObj != null)
         {
-            Low,
-            Medium,
-            High
+            smoothingText = textObj.GetComponent<TextMesh>();
+            UpdateSmoothingText();
         }
 
-        public static SmoothingMode currentMode = SmoothingMode.Low;
-        private static TextMesh smoothingText;
+        buttonRenderer    = GetComponent<MeshRenderer>();
+        unpressedMaterial = new Material(buttonRenderer.material) { color = Color.white, };
+        pressedMaterial   = new Material(buttonRenderer.material) { color = Color.red, };
+    }
 
-        private Transform originalParent;
-        private Vector3 originalLocalPosition;
-        private Quaternion originalLocalRotation;
+    private void LateUpdate()
+    {
+        if (!isFirstPerson || cam == null || head == null)
+            return;
 
-        private Transform head;
-        private Quaternion targetRotation;
+        cam.transform.position = head.position;
+        targetRotation         = head.rotation;
 
-        public System.Action OnFirstPersonPressed;
+        float smoothing = GetSmoothingValue();
+        cam.transform.rotation = Quaternion.Lerp(cam.transform.rotation, targetRotation, smoothing * Time.deltaTime);
+    }
 
-        private MeshRenderer buttonRenderer;
-        private Material unpressedMaterial;
-        private Material pressedMaterial;
+    public void ToggleFirstPerson()
+    {
+        if (goatCamModObject != null)
+            goatCamModObject.transform.position = Vector3.zero;
 
-        public void Start()
+        if (cam == null)
         {
-            gameObject.layer = 18;
-
-            gorillaFace = GameObject.Find("gorillaface");
-            goatCamModObject = GameObject.Find("GoatCameraModModelBetter(Clone)");
-
-            GameObject textObj = GameObject.Find("Sample Textmesh (29)");
-            if (textObj != null)
-            {
-                smoothingText = textObj.GetComponent<TextMesh>();
-                UpdateSmoothingText();
-            }
-
-            buttonRenderer = GetComponent<MeshRenderer>();
-            unpressedMaterial = new Material(buttonRenderer.material) { color = Color.white };
-            pressedMaterial = new Material(buttonRenderer.material) { color = Color.red };
-        }
-
-        public override void ButtonActivation()
-        {
-            base.ButtonActivation();
-
-            isOn = !isOn;
-            UpdateColor();
-
-            if (goatCamModObject != null)
-                goatCamModObject.transform.position = Vector3.zero;
-
+            cam = transform.root.GetComponentInChildren<Camera>(true);
             if (cam == null)
             {
-                cam = transform.root.GetComponentInChildren<Camera>(true);
-                if (cam == null)
-                {
-                    Debug.LogError("[Monke Mod] No Camera found in prefab");
-                    return;
-                }
+                Debug.LogError("[Monke Mod] No Camera found in prefab");
 
-                originalParent = cam.transform.parent;
-                originalLocalPosition = cam.transform.localPosition;
-                originalLocalRotation = cam.transform.localRotation;
-            }
-
-            head = GTPlayer.Instance.headCollider.transform;
-            if (head == null)
-            {
-                Debug.LogError("[Monke Mod] Could not find the local player's head");
                 return;
             }
 
-            if (thirdpersonbutton.ThirdPersonActive && !isFirstPerson)
-            {
-                Debug.Log("[Monke Mod] Cannot enter first-person while third-person is active");
-                return;
-            }
-
-            if (!isFirstPerson)
-            {
-                cam.transform.SetParent(null);
-                cam.transform.position = head.position;
-
-                if (gorillaFace != null)
-                    gorillaFace.SetActive(false);
-
-                isFirstPerson = true;
-                OnFirstPersonPressed?.Invoke();
-            }
-            else
-            {
-                DisableFirstPerson();
-            }
+            originalParent        = cam.transform.parent;
+            originalLocalPosition = cam.transform.localPosition;
+            originalLocalRotation = cam.transform.localRotation;
         }
 
-        void LateUpdate()
+        head = GTPlayer.Instance.headCollider.transform;
+        if (head == null)
         {
-            if (!isFirstPerson || cam == null || head == null)
-                return;
+            Debug.LogError("[Monke Mod] Could not find the local player's head");
 
+            return;
+        }
+
+        if (ThirdPersonButton.ThirdPersonActive && !isFirstPerson)
+        {
+            Debug.Log("[Monke Mod] Cannot enter first-person while third-person is active");
+
+            return;
+        }
+
+        if (!isFirstPerson)
+        {
+            cam.transform.SetParent(null);
             cam.transform.position = head.position;
-            targetRotation = head.rotation;
 
-            float smoothing = GetSmoothingValue();
-            cam.transform.rotation = Quaternion.Lerp(cam.transform.rotation, targetRotation, smoothing * Time.deltaTime);
+            isFirstPerson = true;
+            OnFirstPersonPressed?.Invoke();
         }
-
-        public void DisableFirstPerson()
+        else
         {
-            if (!isFirstPerson || cam == null) return;
-
-            cam.transform.SetParent(originalParent);
-            cam.transform.localPosition = originalLocalPosition;
-            cam.transform.localRotation = originalLocalRotation;
-
-            if (gorillaFace != null)
-                gorillaFace.SetActive(true);
-
-            isFirstPerson = false;
-            UpdateColor();
-        }
-
-        public static void CycleSmoothingModeForward()
-        {
-            switch (currentMode)
-            {
-                case SmoothingMode.Low: currentMode = SmoothingMode.Medium; break;
-                case SmoothingMode.Medium: currentMode = SmoothingMode.High; break;
-                case SmoothingMode.High: currentMode = SmoothingMode.Low; break;
-            }
-            UpdateSmoothingText();
-        }
-
-        public static void CycleSmoothingModeBackward()
-        {
-            switch (currentMode)
-            {
-                case SmoothingMode.Low: currentMode = SmoothingMode.High; break;
-                case SmoothingMode.Medium: currentMode = SmoothingMode.Low; break;
-                case SmoothingMode.High: currentMode = SmoothingMode.Medium; break;
-            }
-            UpdateSmoothingText();
-        }
-
-        private static void UpdateSmoothingText()
-        {
-            if (smoothingText != null)
-                smoothingText.text = currentMode.ToString().ToUpper();
-        }
-
-        private void UpdateColor()
-        {
-            if (buttonRenderer == null) return;
-            buttonRenderer.material = isOn ? pressedMaterial : unpressedMaterial;
-        }
-
-        private static float GetSmoothingValue()
-        {
-            switch (currentMode)
-            {
-                case SmoothingMode.Low: return 1000f;
-                case SmoothingMode.Medium: return 10f;
-                case SmoothingMode.High: return 5f;
-                default: return 10f;
-            }
+            DisableFirstPerson();
         }
     }
+
+    public override void ButtonActivation()
+    {
+        base.ButtonActivation();
+
+        ToggleFirstPerson();
+    }
+
+    public void DisableFirstPerson()
+    {
+        if (!isFirstPerson || cam == null) return;
+
+        cam.transform.SetParent(originalParent);
+        cam.transform.localPosition = originalLocalPosition;
+        cam.transform.localRotation = originalLocalRotation;
+
+        isFirstPerson = false;
+        UpdateColor();
+    }
+
+    public static void CycleSmoothingModeForward()
+    {
+        currentMode = currentMode switch
+                      {
+                              SmoothingMode.Low    => SmoothingMode.Medium,
+                              SmoothingMode.Medium => SmoothingMode.High,
+                              SmoothingMode.High   => SmoothingMode.Low,
+                              var _                => currentMode,
+                      };
+
+        UpdateSmoothingText();
+    }
+
+    public static void CycleSmoothingModeBackward()
+    {
+        currentMode = currentMode switch
+                      {
+                              SmoothingMode.Low    => SmoothingMode.High,
+                              SmoothingMode.Medium => SmoothingMode.Low,
+                              SmoothingMode.High   => SmoothingMode.Medium,
+                              var _                => currentMode,
+                      };
+
+        UpdateSmoothingText();
+    }
+
+    private static void UpdateSmoothingText()
+    {
+        if (smoothingText != null)
+            smoothingText.text = currentMode.ToString().ToUpper();
+    }
+
+    private void UpdateColor()
+    {
+        if (buttonRenderer == null)
+            return;
+
+        buttonRenderer.material = isOn ? pressedMaterial : unpressedMaterial;
+    }
+
+    private static float GetSmoothingValue() =>
+            currentMode switch
+            {
+                    SmoothingMode.Low    => 1000f,
+                    SmoothingMode.Medium => 10f,
+                    SmoothingMode.High   => 5f,
+                    var _                => 10f,
+            };
 }

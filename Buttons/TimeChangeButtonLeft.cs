@@ -1,65 +1,60 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-namespace GoatCamMod
-{
-    public class timechangebuttonleft : GorillaPressableButton
-    {
-        private TextMesh timeText;
+namespace GoatCamMod;
 
-        private readonly List<int> timeCycle = new List<int>()
-        {
+public class TimeChangeButtonLeft : GorillaPressableButton
+{
+    private readonly List<int> timeCycle = new()
+    {
             3,
             7,
-            0
-        };
+            0,
+    };
 
-        private readonly List<string> timeNames = new List<string>()
-        {
+    private readonly List<string> timeNames = new()
+    {
             "DAY",
             "EVENING",
-            "NIGHT"
-        };
+            "NIGHT",
+    };
 
-        public void Start()
-        {
-            gameObject.layer = 18;
+    private TextMesh timeText;
 
-            buttonRenderer = GetComponent<MeshRenderer>();
-            unpressedMaterial = new Material(buttonRenderer.material) { color = Color.white };
-            pressedMaterial = new Material(buttonRenderer.material) { color = Color.red };
+    public void Start()
+    {
+        gameObject.layer = 18;
 
-            TextMesh[] allTextMeshes = GameObject.FindObjectsOfType<TextMesh>(true);
+        buttonRenderer    = GetComponent<MeshRenderer>();
+        unpressedMaterial = new Material(buttonRenderer.material) { color = Color.white, };
+        pressedMaterial   = new Material(buttonRenderer.material) { color = Color.red, };
 
-            foreach (TextMesh tm in allTextMeshes)
+        TextMesh[] allTextMeshes = FindObjectsOfType<TextMesh>(true);
+
+        foreach (TextMesh tm in allTextMeshes)
+            if (tm.gameObject.name == "Sample Textmesh (28)")
             {
-                if (tm.gameObject.name == "Sample Textmesh (28)")
-                {
-                    timeText = tm;
-                    break;
-                }
+                timeText = tm;
+
+                break;
             }
-        }
+    }
 
-        public override void ButtonActivation()
-        {
-            base.ButtonActivation();
+    public override void ButtonActivation()
+    {
+        base.ButtonActivation();
 
-            isOn = !isOn;
-            UpdateColor();
+        isOn = !isOn;
+        UpdateColor();
 
-            // Move backward
-            timechangebuttonright.currentIndex--;
-            if (timechangebuttonright.currentIndex < 0)
-                timechangebuttonright.currentIndex = timeCycle.Count - 1;
+        TimeChangeButtonRight.CurrentIndex--;
+        if (TimeChangeButtonRight.CurrentIndex < 0)
+            TimeChangeButtonRight.CurrentIndex = timeCycle.Count - 1;
 
-            BetterDayNightManager.instance.SetTimeOfDay(
-                timeCycle[timechangebuttonright.currentIndex]);
+        BetterDayNightManager.instance.SetTimeOfDay(
+                timeCycle[TimeChangeButtonRight.CurrentIndex]);
 
-            if (timeText != null)
-            {
-                timeText.text = timeNames[timechangebuttonright.currentIndex];
-            }
-        }
+        if (timeText != null)
+            timeText.text = timeNames[TimeChangeButtonRight.CurrentIndex];
     }
 }

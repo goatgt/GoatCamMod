@@ -1,148 +1,169 @@
-﻿using BepInEx;
-using Unity.Cinemachine;
-using GoatCamMod;
-using GoatCamMod.Tools;
-using System;
+﻿using System;
+using System.Globalization;
 using System.Threading.Tasks;
+using BepInEx;
+using GoatCamMod.Tools;
+using TMPro;
 using Unity.Cinemachine;
 using UnityEngine;
+using UnityEngine.XR;
 
-namespace GoatCamMod
+namespace GoatCamMod;
+
+[BepInPlugin(Constants.Guid, Constants.Name, Constants.Version)]
+public class Plugin : BaseUnityPlugin
 {
-    [BepInPlugin(Constants.GUID, Constants.NAME, Constants.VERS)]
-    public class Plugin : BaseUnityPlugin
+    private Camera     goatCam;
+    private GameObject gsdPrefab;
+    private Camera     shoulderCam;
+
+    private void Awake()
     {
-        private GameObject _GSDPrefab;
-        private Camera _goatCam;
-        private Camera _shoulderCam;
-
-        void Awake()
-        {
-            GorillaTagger.OnPlayerSpawned(async () => await SetupCam());
-        }
-
-        async Task SetupCam()
-        {
-            try
-            {
-                _GSDPrefab = await AssetLoader.LoadAsset<GameObject>("GoatCameraModModelBetter");
-                if (_GSDPrefab == null)
-                {
-                    Debug.LogError("[GoatCam]: Failed to load prefab.");
-                    return;
-                }
-
-                var instance = Instantiate(_GSDPrefab);
-                instance.SetActive(true);
-
-                instance.transform.position = new Vector3(-66.8047f, 11.9368f, -82.5664f);
-                instance.transform.rotation = Quaternion.Euler(0f, 229.9595f, 0f);
-                instance.transform.localScale = Vector3.one * 0.345887f;
-
-                // Attach hold + popup
-                instance.AddComponent<DevHoldable>();
-                instance.AddComponent<RightPrimaryPopUp>();
-
-                // Attach all buttons
-                instance.transform.Find("GoatCamModObjects/ThirdPersonButton").gameObject.AddComponent<thirdpersonbutton>();
-                instance.transform.Find("GoatCamModObjects/FollowPlayerButton").gameObject.AddComponent<followplayerbutton>();
-                instance.transform.Find("GoatCamModObjects/FlipCameraButton").gameObject.AddComponent<flipbutton>();
-                instance.transform.Find("GoatCamModObjects/FirstPersonButton").gameObject.AddComponent<firstpersonbutton>();
-                instance.transform.Find("GoatCamModObjects/NearClipButtonRight").gameObject.AddComponent<nearclipbuttonup>();
-                instance.transform.Find("GoatCamModObjects/NearClipButtonLeft").gameObject.AddComponent<nearclipbuttondown>();
-                instance.transform.Find("GoatCamModObjects/FOVButtonLeft").gameObject.AddComponent<fovbuttondown>();
-                instance.transform.Find("GoatCamModObjects/FOVButtonRight").gameObject.AddComponent<fovbuttonup>();
-                instance.transform.Find("GoatCamModObjects/Idk Yet Button").gameObject.AddComponent<menubutton>();
-                instance.transform.Find("GoatCamModObjects/Menu/Idk Yet Button (1)").gameObject.AddComponent<hidenamebutton>();
-                instance.transform.Find("GoatCamModObjects/Menu/Idk Yet Button (2)").gameObject.AddComponent<smoothingbuttondown>();
-                instance.transform.Find("GoatCamModObjects/Menu/Idk Yet Button (3)").gameObject.AddComponent<smoothingbuttonup>();
-                instance.transform.Find("GoatCamModObjects/Menu/Idk Yet Button (4)").gameObject.AddComponent<timechangebuttonleft>();
-                instance.transform.Find("GoatCamModObjects/Menu/Idk Yet Button (5)").gameObject.AddComponent<timechangebuttonright>();
-                instance.transform.Find("GoatCamModObjects/Menu/Idk Yet Button (6)").gameObject.AddComponent<hideheadbutton>();
-                instance.transform.Find("GoatCamModObjects/Menu/Idk Yet Button (7)").gameObject.AddComponent<disconnectbutton>();
-                instance.transform.Find("GoatCamModObjects/Menu/Idk Yet Button (8)").gameObject.AddComponent<quitgamemenubutton>();
-                instance.transform.Find("GoatCamModObjects/Menu/Idk Yet Button (9)").gameObject.AddComponent<redcolorbutton>();
-                instance.transform.Find("GoatCamModObjects/Menu/Idk Yet Button (13)").gameObject.AddComponent<greencolorbutton>();
-                instance.transform.Find("GoatCamModObjects/Menu/Idk Yet Button (14)").gameObject.AddComponent<bluecolorbutton>();
-                instance.transform.Find("GoatCamModObjects/Menu/Idk Yet Button (16)").gameObject.AddComponent<capturebutton>();
-                instance.transform.Find("GoatCamModObjects/Menu/QuitGameMenu/Idk Yet Button (16)").gameObject.AddComponent<closequitmenubutton>();
-                instance.transform.Find("GoatCamModObjects/Menu/QuitGameMenu/Idk Yet Button (17)").gameObject.AddComponent<quitgamebutton>();
-
-                // Get GoatCam internal camera
-                _goatCam = instance.GetComponentInChildren<Camera>();
-                if (_goatCam == null)
-                {
-                    Debug.LogError("[GoatCam]: Camera not found in prefab.");
-                    return;
-                }
-
-                // Get Gorilla Tag Shoulder Camera (desktop output)
-                var shoulderCamObj = GameObject.Find("Player Objects/Third Person Camera/Shoulder Camera");
-                if (shoulderCamObj == null)
-                {
-                    Debug.LogError("[GoatCam]: Shoulder Camera not found.");
-                    return;
-                }
-
-                _shoulderCam = shoulderCamObj.GetComponent<Camera>();
-
-                // Disable Cinemachine
-                var camBrain = shoulderCamObj.GetComponent<CinemachineBrain>();
-                if (camBrain != null)
-                    camBrain.enabled = false;
-
-                // Disable virtual camera
-                var vcam = shoulderCamObj.transform.Find("CM vcam1");
-                if (vcam != null)
-                    vcam.gameObject.SetActive(false);
-
-                // Parent Shoulder Camera to GoatCam camera
-                shoulderCamObj.transform.SetParent(_goatCam.transform);
-                shoulderCamObj.transform.localPosition = Vector3.zero;
-                shoulderCamObj.transform.localRotation = Quaternion.identity;
-
-                // Find and hide LCKWallCameraSpawner
-                var lckWallCameraSpawner = GameObject.Find("LCKWallCameraSpawner");
-                if (lckWallCameraSpawner != null)
-                {
-                    lckWallCameraSpawner.SetActive(false);
-                    Debug.Log("[GoatCam]: LCKWallCameraSpawner hidden.");
-                }
-                else
-                {
-                    Debug.LogWarning("[GoatCam]: LCKWallCameraSpawner not found.");
-                }
-
-                Debug.Log("[GoatCam]: Desktop camera fully synced to GoatCam.");
-            }
-            catch (Exception e)
-            {
-                Debug.LogError("[GoatCam]: Setup failed - " + e.Message);
-            }
-        }
-
-        void LateUpdate()
-        {
-            if (_goatCam == null || _shoulderCam == null)
-                return;
-
-            _shoulderCam.fieldOfView = _goatCam.fieldOfView;
-            _shoulderCam.nearClipPlane = _goatCam.nearClipPlane;
-            _shoulderCam.farClipPlane = _goatCam.farClipPlane;
-            _shoulderCam.cullingMask = _goatCam.cullingMask;
-            _shoulderCam.clearFlags = _goatCam.clearFlags;
-            _shoulderCam.backgroundColor = _goatCam.backgroundColor;
-            _shoulderCam.allowHDR = _goatCam.allowHDR;
-            _shoulderCam.allowMSAA = _goatCam.allowMSAA;
-            _shoulderCam.orthographic = _goatCam.orthographic;
-            _shoulderCam.orthographicSize = _goatCam.orthographicSize;
-        }
+        GorillaTagger.OnPlayerSpawned(async void () =>
+                                      {
+                                          try
+                                          {
+                                              await SetupCam();
+                                          }
+                                          catch (Exception e)
+                                          {
+                                              // Ignored
+                                          }
+                                      });
     }
 
-    public class Constants
+    private void LateUpdate()
     {
-        public const string GUID = "goat.goatcammod";
-        public const string NAME = "GoatCamMod";
-        public const string VERS = "1.0.0";
+        if (goatCam == null || shoulderCam == null)
+            return;
+
+        shoulderCam.fieldOfView      = goatCam.fieldOfView;
+        shoulderCam.nearClipPlane    = goatCam.nearClipPlane;
+        shoulderCam.farClipPlane     = goatCam.farClipPlane;
+        shoulderCam.cullingMask      = goatCam.cullingMask;
+        shoulderCam.clearFlags       = goatCam.clearFlags;
+        shoulderCam.backgroundColor  = goatCam.backgroundColor;
+        shoulderCam.allowHDR         = goatCam.allowHDR;
+        shoulderCam.allowMSAA        = goatCam.allowMSAA;
+        shoulderCam.orthographic     = goatCam.orthographic;
+        shoulderCam.orthographicSize = goatCam.orthographicSize;
+    }
+
+    private static void AddComponent<T>(Transform parent, string name) where T : Component
+    {
+        Transform button = parent.Find(name);
+
+        if (button != null)
+            button.gameObject.AddComponent<T>();
+        else
+            Debug.LogWarning($"[GoatCam]: Could not find {name}");
+    }
+
+    private async Task SetupCam()
+    {
+        try
+        {
+            gsdPrefab = await AssetLoader.LoadAsset<GameObject>("GoatCameraModModelBetter");
+            if (gsdPrefab == null)
+            {
+                Debug.LogError("[GoatCam]: Failed to load prefab.");
+
+                return;
+            }
+
+            GameObject instance = Instantiate(gsdPrefab);
+            instance.SetActive(true);
+
+            instance.transform.position   = new Vector3(-66.8047f, 11.9368f, -82.5664f);
+            instance.transform.rotation   = Quaternion.Euler(0f, 229.9595f, 0f);
+            instance.transform.localScale = Vector3.one * 0.345887f;
+
+            instance.AddComponent<DevHoldable>();
+            instance.AddComponent<RightPrimaryPopUp>();
+
+            Transform root     = instance.transform.Find("GoatCamModObjects");
+            Transform menu     = root.Find("Menu");
+            Transform quitMenu = menu.Find("QuitGameMenu");
+
+            AddComponent<ThirdPersonButton>(root, "ThirdPersonButton");
+            AddComponent<FollowPlayerButton>(root, "FollowPlayerButton");
+            AddComponent<FlipButton>(root, "FlipCameraButton");
+            AddComponent<FirstPersonButton>(root, "FirstPersonButton");
+            AddComponent<NearClipButtonUp>(root, "NearClipButtonRight");
+            AddComponent<NearClipButtonDown>(root, "NearClipButtonLeft");
+            AddComponent<FovButtonDown>(root, "FOVButtonLeft");
+            AddComponent<FovButtonUp>(root, "FOVButtonRight");
+            AddComponent<MenuButton>(root, "Idk Yet Button");
+
+            AddComponent<HideNameButton>(menu, "Idk Yet Button (1)");
+            AddComponent<SmoothingButtonDown>(menu, "Idk Yet Button (2)");
+            AddComponent<SmoothingButtonUp>(menu, "Idk Yet Button (3)");
+            AddComponent<TimeChangeButtonLeft>(menu, "Idk Yet Button (4)");
+            AddComponent<TimeChangeButtonRight>(menu, "Idk Yet Button (5)");
+            AddComponent<HideHeadButton>(menu, "Idk Yet Button (6)");
+            AddComponent<DisconnectButton>(menu, "Idk Yet Button (7)");
+            AddComponent<GuitGameMenuButton>(menu, "Idk Yet Button (8)");
+            AddComponent<RedColorButton>(menu, "Idk Yet Button (9)");
+            AddComponent<GreenColorButton>(menu, "Idk Yet Button (13)");
+            AddComponent<BlueColorButton>(menu, "Idk Yet Button (14)");
+            AddComponent<CaptureButton>(menu, "Idk Yet Button (16)");
+
+            AddComponent<CloseQuitMenuButton>(quitMenu, "Idk Yet Button (16)");
+            AddComponent<QuitGameButton>(quitMenu, "Idk Yet Button (17)");
+
+            goatCam = instance.GetComponentInChildren<Camera>();
+            if (goatCam == null)
+            {
+                Debug.LogError("[GoatCam]: Camera not found in prefab.");
+
+                return;
+            }
+
+            GameObject shoulderCamObj = GameObject.Find("Player Objects/Third Person Camera/Shoulder Camera");
+            if (shoulderCamObj == null)
+            {
+                Debug.LogError("[GoatCam]: Shoulder Camera not found.");
+
+                return;
+            }
+
+            shoulderCam = shoulderCamObj.GetComponent<Camera>();
+
+            CinemachineBrain camBrain = shoulderCamObj.GetComponent<CinemachineBrain>();
+            if (camBrain != null)
+                camBrain.enabled = false;
+
+            Transform vcam = shoulderCamObj.transform.Find("CM vcam1");
+            if (vcam != null)
+                vcam.gameObject.SetActive(false);
+
+            shoulderCamObj.transform.SetParent(goatCam.transform);
+            shoulderCamObj.transform.localPosition = Vector3.zero;
+            shoulderCamObj.transform.localRotation = Quaternion.identity;
+            
+            goatCam.fieldOfView = 95f;
+            GameObject.Find("Sample Textmesh (9)").GetComponent<TextMesh>().text = goatCam.fieldOfView.ToString(CultureInfo.CurrentCulture);
+
+            GameObject lckWallCameraSpawner = GameObject.Find("LCKWallCameraSpawner");
+            if (lckWallCameraSpawner != null)
+            {
+                lckWallCameraSpawner.SetActive(false);
+                Debug.Log("[GoatCam]: LCKWallCameraSpawner hidden.");
+            }
+            else
+            {
+                Debug.LogWarning("[GoatCam]: LCKWallCameraSpawner not found.");
+            }
+
+            Debug.Log("[GoatCam]: Desktop camera fully synced to GoatCam.");
+
+            //Starts in first person when not on vr so you can play on pc
+            if (!XRSettings.isDeviceActive)
+                FirstPersonButton.Instance.ToggleFirstPerson();
+        }
+        catch (Exception e)
+        {
+            Debug.LogError("[GoatCam]: Setup failed - " + e.Message);
+        }
     }
 }

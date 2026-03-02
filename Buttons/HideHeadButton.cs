@@ -1,49 +1,63 @@
-﻿using System;
+﻿using System.Linq;
+using GorillaNetworking;
 using UnityEngine;
 
-namespace GoatCamMod
+namespace GoatCamMod;
+
+public class HideHeadButton : GorillaPressableButton
 {
-    public class hideheadbutton : GorillaPressableButton
+    private GameObject headCosmetics;
+
+    public void Start()
     {
-        private GameObject headCosmetics;
+        gameObject.layer = 18;
 
-        public override void ButtonActivation()
+        buttonRenderer = GetComponent<MeshRenderer>();
+
+        unpressedMaterial = new Material(buttonRenderer.material)
         {
-            Debug.Log("[Monke Mod] Pressed Button");
+                color = Color.white,
+        };
 
-            isOn = !isOn;
-            UpdateColor();
+        pressedMaterial = new Material(buttonRenderer.material)
+        {
+                color = Color.red,
+        };
+    }
 
-            if (headCosmetics == null)
+    public override void ButtonActivation()
+    {
+        Debug.Log("[Monke Mod] Pressed Button");
+
+        isOn = !isOn;
+        UpdateColor();
+
+        VRRig rig = VRRig.LocalRig;
+
+        try
+        {
+            CosmeticsController.CosmeticItem[] headItems = rig.cosmeticSet.items.Where(item =>
+                    item.itemCategory is CosmeticsController.CosmeticCategory.Face
+                                         or CosmeticsController.CosmeticCategory.Hat).ToArray();
+
+            foreach (CosmeticsController.CosmeticItem cosmeticItem in headItems)
             {
-                headCosmetics = GameObject.Find("HeadCosmetics");
+                CosmeticItemInstance cosmeticObject = rig.cosmeticsObjectRegistry.Cosmetic(cosmeticItem.displayName);
 
-                if (headCosmetics == null)
-                {
-                    Debug.LogError("[Monke Mod] Could not find HeadCosmetics");
-                    return;
-                }
+                CosmeticsController.CosmeticSlots slot =
+                        cosmeticItem.itemCategory == CosmeticsController.CosmeticCategory.Face
+                                ? CosmeticsController.CosmeticSlots.Face
+                                : CosmeticsController.CosmeticSlots.Hat;
+
+                if (isOn)
+                    cosmeticObject.EnableItem(slot, rig);
+                else
+                    cosmeticObject.DisableItem(slot);
             }
-
-            // Hide when ON, show when OFF
-            headCosmetics.SetActive(!isOn);
         }
-
-        public void Start()
+        catch
         {
-            gameObject.layer = 18;
-
-            buttonRenderer = GetComponent<MeshRenderer>();
-
-            unpressedMaterial = new Material(buttonRenderer.material)
-            {
-                color = Color.white
-            };
-
-            pressedMaterial = new Material(buttonRenderer.material)
-            {
-                color = Color.red
-            };
+            // Ignored
         }
     }
 }

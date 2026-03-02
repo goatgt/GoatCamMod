@@ -1,77 +1,64 @@
 ﻿using UnityEngine;
-using GorillaLocomotion;
 
-namespace GoatCamMod
+namespace GoatCamMod;
+
+public class BlueColorButton : GorillaPressableButton
 {
-    public class bluecolorbutton : GorillaPressableButton
+    private const int          MaxDigit = 9;
+    private       int          blueDigit;
+    private new   MeshRenderer buttonRenderer;
+
+    private     TextMesh colorTextMesh;
+    private new Material pressedMaterial;
+    private new Material unpressedMaterial;
+
+    private void Start()
     {
-        private MeshRenderer buttonRenderer;
-        private Material unpressedMaterial;
-        private Material pressedMaterial;
+        gameObject.layer = 18;
 
-        private TextMesh colorTextMesh;
-        private int blueDigit = 0;
-        private const int MAX_DIGIT = 9;
+        buttonRenderer = GetComponent<MeshRenderer>();
+        Material unpressed = new(buttonRenderer.material) { color = Color.white, };
+        Material pressed   = new(buttonRenderer.material) { color = Color.blue, };
+        unpressedMaterial = unpressed;
+        pressedMaterial   = pressed;
 
-        public override void ButtonActivation()
-        {
-            // Increment blue digit 0-9
-            blueDigit = (blueDigit + 1) % (MAX_DIGIT + 1);
-
-            // Update TextMesh
-            if (colorTextMesh != null)
-                colorTextMesh.text = blueDigit.ToString();
-
-            // Convert to 0-1 float
-            float blueValue = (float)blueDigit / MAX_DIGIT;
-
-            // Get current red and green from PlayerPrefs
-            float redValue = PlayerPrefs.GetFloat("redValue", 0f);
-            float greenValue = PlayerPrefs.GetFloat("greenValue", 0f);
-
-            // Apply new color
-            GorillaTagger.Instance.UpdateColor(redValue, greenValue, blueValue);
-
-            // Save blue value
-            PlayerPrefs.SetFloat("blueValue", blueValue);
-        }
-
-        private void Start()
-        {
-            this.gameObject.layer = 18;
-
-            // Button visuals
-            buttonRenderer = GetComponent<MeshRenderer>();
-            Material unpressed = new Material(buttonRenderer.material) { color = Color.white };
-            Material pressed = new Material(buttonRenderer.material) { color = Color.blue };
-            unpressedMaterial = unpressed;
-            pressedMaterial = pressed;
-
-            // Find TextMesh
-            colorTextMesh = null;
-            TextMesh[] allTextMeshes = GameObject.FindObjectsOfType<TextMesh>();
-            foreach (TextMesh tm in allTextMeshes)
+        colorTextMesh = null;
+        TextMesh[] allTextMeshes = FindObjectsOfType<TextMesh>();
+        foreach (TextMesh tm in allTextMeshes)
+            if (tm.gameObject.name == "Sample Textmesh (31)")
             {
-                if (tm.gameObject.name == "Sample Textmesh (31)")
-                {
-                    colorTextMesh = tm;
-                    break;
-                }
+                colorTextMesh = tm;
+
+                break;
             }
 
-            // Initialize blueDigit from PlayerPrefs
-            float savedBlue = PlayerPrefs.GetFloat("blueValue", 0f);
-            blueDigit = Mathf.RoundToInt(savedBlue * MAX_DIGIT);
+        float savedBlue = PlayerPrefs.GetFloat("blueValue", 0f);
+        blueDigit = Mathf.RoundToInt(savedBlue * MaxDigit);
 
-            if (colorTextMesh != null)
-                colorTextMesh.text = blueDigit.ToString();
+        if (colorTextMesh != null)
+            colorTextMesh.text = blueDigit.ToString();
 
-            // Apply initial color with saved red/green
-            float redValue = PlayerPrefs.GetFloat("redValue", 0f);
-            float greenValue = PlayerPrefs.GetFloat("greenValue", 0f);
-            GorillaTagger.Instance.UpdateColor(redValue, greenValue, savedBlue);
+        float redValue   = PlayerPrefs.GetFloat("redValue",   0f);
+        float greenValue = PlayerPrefs.GetFloat("greenValue", 0f);
+        GorillaTagger.Instance.UpdateColor(redValue, greenValue, savedBlue);
 
-            buttonRenderer.material = unpressedMaterial;
-        }
+        buttonRenderer.material = unpressedMaterial;
+    }
+
+    public override void ButtonActivation()
+    {
+        blueDigit = (blueDigit + 1) % (MaxDigit + 1);
+
+        if (colorTextMesh != null)
+            colorTextMesh.text = blueDigit.ToString();
+
+        float blueValue = (float)blueDigit / MaxDigit;
+
+        float redValue   = PlayerPrefs.GetFloat("redValue",   0f);
+        float greenValue = PlayerPrefs.GetFloat("greenValue", 0f);
+
+        GorillaTagger.Instance.UpdateColor(redValue, greenValue, blueValue);
+
+        PlayerPrefs.SetFloat("blueValue", blueValue);
     }
 }

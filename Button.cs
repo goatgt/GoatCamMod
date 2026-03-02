@@ -1,30 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using UnityEngine;
-using TMPro;
+﻿using UnityEngine;
 
-namespace GoatCamMod
+namespace GoatCamMod;
+
+public class Button : GorillaPressableButton
 {
-    public class button : GorillaPressableButton
+    public void Start()
     {
-        public override void ButtonActivation()
-        {
-            Debug.Log("[Monke Mod] Pressed Button");
-            isOn = !isOn;
-            UpdateColor();
+        gameObject.layer = 18;
 
-        }
-        public void Start()
-        {
-            this.gameObject.layer = 18;
+        buttonRenderer = GetComponent<MeshRenderer>();
+        Material unpressedMat = new(buttonRenderer.material) { color = Color.white, };
+        Material pressedMat   = new(buttonRenderer.material) { color = Color.red, };
+        unpressedMaterial = unpressedMat;
+        pressedMaterial   = pressedMat;
+    }
 
-            buttonRenderer = GetComponent<MeshRenderer>();
-            Material unpressedMat = new Material(buttonRenderer.material) { color = Color.white };
-            Material pressedMat = new Material(buttonRenderer.material) { color = Color.red };
-            unpressedMaterial = unpressedMat;
-            pressedMaterial = pressedMat;
-
-        }
+    public override void ButtonActivation()
+    {
+        Debug.Log("[Monke Mod] Pressed Button");
+        isOn = !isOn;
+        UpdateColor();
     }
 }
