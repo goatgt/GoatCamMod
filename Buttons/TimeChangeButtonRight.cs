@@ -1,76 +1,72 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-namespace GoatCamMod
+namespace GoatCamMod;
+
+public class TimeChangeButtonRight : GorillaPressableButton
 {
-    public class timechangebuttonright : GorillaPressableButton
-    {
-        public static int currentIndex = 0;
+    public static int CurrentIndex;
 
-        private TextMesh timeText;
+    private readonly List<int> timeCycle =
+    [
+            3,
+            7,
+            0,
+    ];
 
-        private readonly List<int> timeCycle = new List<int>()
-        {
-            3,  // Day
-            7,  // Evening
-            0   // Night
-        };
-
-        private readonly List<string> timeNames = new List<string>()
-        {
+    private readonly List<string> timeNames =
+    [
             "DAY",
             "EVENING",
-            "NIGHT"
-        };
+            "NIGHT",
+    ];
 
-        public void Start()
-        {
-            gameObject.layer = 18;
+    private TextMesh timeText;
 
-            buttonRenderer = GetComponent<MeshRenderer>();
-            unpressedMaterial = new Material(buttonRenderer.material) { color = Color.white };
-            pressedMaterial = new Material(buttonRenderer.material) { color = Color.red };
+    public void Start()
+    {
+        gameObject.layer = 18;
 
-            // Find the TextMesh by name anywhere in the scene
-            TextMesh[] allTextMeshes = GameObject.FindObjectsOfType<TextMesh>(true);
+        buttonRenderer    = GetComponent<MeshRenderer>();
+        unpressedMaterial = new Material(buttonRenderer.material) { color = Color.white, };
+        pressedMaterial   = new Material(buttonRenderer.material) { color = Color.red, };
 
-            foreach (TextMesh tm in allTextMeshes)
+        TextMesh[] allTextMeshes = FindObjectsOfType<TextMesh>(true);
+
+        foreach (TextMesh tm in allTextMeshes)
+            if (tm.gameObject.name == "Sample Textmesh (28)")
             {
-                if (tm.gameObject.name == "Sample Textmesh (28)")
-                {
-                    timeText = tm;
-                    timeText.text = "TIME";
-                    Debug.Log("[Monke Mod] Found Sample Textmesh (28)");
-                    break;
-                }
+                timeText      = tm;
+                timeText.text = "TIME";
+                Debug.Log("[Monke Mod] Found Sample Textmesh (28)");
+
+                break;
             }
 
-            if (timeText == null)
-                Debug.LogError("[Monke Mod] Could not find Sample Textmesh (28)");
-        }
+        if (timeText == null)
+            Debug.LogError("[Monke Mod] Could not find Sample Textmesh (28)");
+    }
 
-        public override void ButtonActivation()
-        {
-            base.ButtonActivation();
+    public override void ButtonActivation()
+    {
+        base.ButtonActivation();
 
-            isOn = !isOn;
-            UpdateColor();
+        isOn = !isOn;
+        UpdateColor();
 
-            // Move forward
-            currentIndex = (currentIndex + 1) % timeCycle.Count;
+        CurrentIndex = (CurrentIndex + 1) % timeCycle.Count;
 
-            ApplyTime();
-        }
+        ApplyTime();
+    }
 
-        private void ApplyTime()
-        {
-            BetterDayNightManager.instance.SetTimeOfDay(timeCycle[currentIndex]);
+    private void ApplyTime()
+    {
+        BetterDayNightManager.instance.SetTimeOfDay(timeCycle[CurrentIndex]);
 
-            if (timeText != null)
-            {
-                timeText.text = timeNames[currentIndex];
-                Debug.Log("[Monke Mod] Updated text to: " + timeNames[currentIndex]);
-            }
-        }
+        if (timeText == null)
+            return;
+
+        timeText.text = timeNames[CurrentIndex];
+        Debug.Log("[Monke Mod] Updated text to: " + timeNames[CurrentIndex]);
     }
 }

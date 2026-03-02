@@ -1,35 +1,31 @@
 ﻿using UnityEngine;
-using Photon.Pun;
 
-namespace GoatCamMod
+namespace GoatCamMod;
+
+public class DisconnectButton : GorillaPressableButton
 {
-    public class disconnectbutton : GorillaPressableButton
+    private void Start()
     {
-        public override void ButtonActivation()
+        gameObject.layer = 18;
+
+        buttonRenderer = GetComponent<MeshRenderer>();
+
+        unpressedMaterial = new Material(buttonRenderer.material)
         {
-            Debug.Log("[GoatCamMod] Disconnect Button Pressed");
+                color = Color.white,
+        };
 
-            if (PhotonNetwork.IsConnected)
-            {
-                PhotonNetwork.Disconnect();
-            }
-        }
-
-        void Start()
+        pressedMaterial = new Material(buttonRenderer.material)
         {
-            this.gameObject.layer = 18;
+                color = Color.red,
+        };
+    }
 
-            buttonRenderer = GetComponent<MeshRenderer>();
+    public override void ButtonActivation()
+    {
+        Debug.Log("[GoatCamMod] Disconnect Button Pressed");
 
-            unpressedMaterial = new Material(buttonRenderer.material)
-            {
-                color = Color.white
-            };
-
-            pressedMaterial = new Material(buttonRenderer.material)
-            {
-                color = Color.red
-            };
-        }
+        if (NetworkSystem.Instance.InRoom)
+            NetworkSystem.Instance.ReturnToSinglePlayer();
     }
 }

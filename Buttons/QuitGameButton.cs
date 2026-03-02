@@ -1,45 +1,44 @@
 ﻿using UnityEngine;
 
-namespace GoatCamMod
+namespace GoatCamMod;
+
+public class QuitGameButton : GorillaPressableButton
 {
-    public class quitgamebutton : GorillaPressableButton
+    private void Start()
     {
-        public override void ButtonActivation()
+        gameObject.layer = 18;
+
+        buttonRenderer = GetComponent<MeshRenderer>();
+
+        Material unpressedMat = new(buttonRenderer.material)
         {
-            Debug.Log("[GoatCamMod] Quit Game Button Pressed");
+                color = Color.white,
+        };
 
-            QuitGame();
-        }
-
-        void Start()
+        Material pressedMat = new(buttonRenderer.material)
         {
-            this.gameObject.layer = 18;
+                color = Color.red,
+        };
 
-            buttonRenderer = GetComponent<MeshRenderer>();
+        unpressedMaterial = unpressedMat;
+        pressedMaterial   = pressedMat;
+    }
 
-            Material unpressedMat = new Material(buttonRenderer.material)
-            {
-                color = Color.white
-            };
+    public override void ButtonActivation()
+    {
+        Debug.Log("[GoatCamMod] Quit Game Button Pressed");
 
-            Material pressedMat = new Material(buttonRenderer.material)
-            {
-                color = Color.red
-            };
+        QuitGame();
+    }
 
-            unpressedMaterial = unpressedMat;
-            pressedMaterial = pressedMat;
-        }
-
-        private void QuitGame()
-        {
+    private void QuitGame()
+    {
 #if UNITY_EDITOR
             Debug.Log("[GoatCamMod] Stopping Play Mode (Editor)");
             UnityEditor.EditorApplication.isPlaying = false;
 #else
-            Debug.Log("[GoatCamMod] Quitting Application");
-            Application.Quit();
+        Debug.Log("[GoatCamMod] Quitting Application");
+        Application.Quit();
 #endif
-        }
     }
 }

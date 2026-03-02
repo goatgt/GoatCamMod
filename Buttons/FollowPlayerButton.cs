@@ -1,74 +1,72 @@
-﻿using UnityEngine;
-using GorillaLocomotion;
+﻿using GorillaLocomotion;
+using UnityEngine;
 
-namespace GoatCamMod
+namespace GoatCamMod;
+
+public class FollowPlayerButton : GorillaPressableButton
 {
-    public class followplayerbutton : GorillaPressableButton
+    private const float     PositionSmooth = 0.12f;
+    private const float     RotationSmooth = 0.18f;
+    private       Transform bodyTransform;
+
+    private bool      followPlayer;
+    private Transform goatModelTransform;
+
+    private void Start()
     {
-        private Transform goatModelTransform;
-        private Transform bodyTransform;
+        gameObject.layer = 18;
 
-        private bool followPlayer = false;
-        private float positionSmooth = 0.12f;
-        private float rotationSmooth = 0.18f;
+        buttonRenderer = GetComponent<MeshRenderer>();
+        Material unpressedMat = new(buttonRenderer.material) { color = Color.white, };
+        Material pressedMat   = new(buttonRenderer.material) { color = Color.red, };
+        unpressedMaterial = unpressedMat;
+        pressedMaterial   = pressedMat;
 
-        public override void ButtonActivation()
-        {
-            followPlayer = !followPlayer;
+        GameObject goatModel = GameObject.Find("GoatCameraModModelBetter(Clone)");
+        if (goatModel != null)
+            goatModelTransform = goatModel.transform;
 
-            isOn = followPlayer;
-            UpdateColor();
-        }
+        if (GTPlayer.Instance != null)
+            bodyTransform = GTPlayer.Instance.bodyCollider.transform;
+    }
 
-        private void Start()
-        {
-            gameObject.layer = 18;
+    private void LateUpdate()
+    {
+        if (!followPlayer || goatModelTransform == null || bodyTransform == null)
+            return;
 
-            buttonRenderer = GetComponent<MeshRenderer>();
-            Material unpressedMat = new Material(buttonRenderer.material) { color = Color.white };
-            Material pressedMat = new Material(buttonRenderer.material) { color = Color.red };
-            unpressedMaterial = unpressedMat;
-            pressedMaterial = pressedMat;
+        //Sorry if this isn't what you intended, but I've had people tell me they wanted it to follow their position and not just make the camera look at it
+        Vector3 targetPosition = new(
+                bodyTransform.position.x,
+                bodyTransform.position.y,
+                bodyTransform.position.z
+        );
 
-            GameObject goatModel = GameObject.Find("GoatCameraModModelBetter(Clone)");
-            if (goatModel != null)
-                goatModelTransform = goatModel.transform;
-
-            if (GTPlayer.Instance != null)
-                bodyTransform = GTPlayer.Instance.bodyCollider.transform;
-        }
-
-        private void LateUpdate()
-        {
-            if (!followPlayer || goatModelTransform == null || bodyTransform == null)
-                return;
-
-            // Keep X/Z position fixed, only follow Y (vertical)
-            Vector3 targetPosition = new Vector3(
-                goatModelTransform.position.x,       // stay in same X
-                bodyTransform.position.y,            // follow player's Y
-                goatModelTransform.position.z        // stay in same Z
-            );
-
-            goatModelTransform.position = Vector3.Lerp(
+        goatModelTransform.position = Vector3.Lerp(
                 goatModelTransform.position,
                 targetPosition,
-                positionSmooth
-            );
+                PositionSmooth
+        );
 
-            // Rotate to look at player
-            Vector3 directionToPlayer = bodyTransform.position - goatModelTransform.position;
-            directionToPlayer.y = 0f; // keep rotation only horizontal (optional, remove if you want full tilt)
+        Vector3 directionToPlayer = bodyTransform.position - goatModelTransform.position;
+        directionToPlayer.y = 0f;
 
-            if (directionToPlayer != Vector3.zero)
-            {
-                Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer.normalized);
-                goatModelTransform.rotation = Quaternion.Slerp(
-                    goatModelTransform.rotation,
-                    targetRotation,
-                    rotationSmooth
-                );
-            }
-        }
+        if (directionToPlayer == Vector3.zero)
+            return;
+
+        Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer.normalized);
+        goatModelTransform.rotation = Quaternion.Slerp(
+                goatModelTransform.rotation,
+                targetRotation,
+                RotationSmooth
+        );
+    }
+
+    public override void ButtonActivation()
+    {
+        followPlayer = !followPlayer;
+
+        isOn = followPlayer;
+        UpdateColor();
     }
 }

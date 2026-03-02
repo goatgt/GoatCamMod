@@ -1,46 +1,38 @@
 ﻿using UnityEngine;
 
-namespace GoatCamMod
+namespace GoatCamMod;
+
+public class MenuButton : GorillaPressableButton
 {
-    public class menubutton : GorillaPressableButton
+    private GameObject menu;
+
+    private void Start()
     {
-        private GameObject menu;
+        gameObject.layer = 18;
 
-        public override void ButtonActivation()
-        {
-            Debug.Log("[GoatCamMod] Pressed Button");
+        buttonRenderer = GetComponent<MeshRenderer>();
+        Material unpressedMat = new(buttonRenderer.material) { color = Color.white, };
+        Material pressedMat   = new(buttonRenderer.material) { color = Color.red, };
 
-            isOn = !isOn;
-            UpdateColor();
+        unpressedMaterial = unpressedMat;
+        pressedMaterial   = pressedMat;
 
-            if (menu != null)
-            {
-                menu.SetActive(isOn); // Toggle visibility
-            }
-        }
+        menu = transform.root.Find("GoatCamModObjects/Menu")?.gameObject;
 
-        void Start()
-        {
-            this.gameObject.layer = 18;
+        if (menu != null)
+            menu.SetActive(false);
+        else
+            Debug.LogError("[GoatCamMod] Could not find Menu!");
+    }
 
-            buttonRenderer = GetComponent<MeshRenderer>();
-            Material unpressedMat = new Material(buttonRenderer.material) { color = Color.white };
-            Material pressedMat = new Material(buttonRenderer.material) { color = Color.red };
+    public override void ButtonActivation()
+    {
+        Debug.Log("[GoatCamMod] Pressed Button");
 
-            unpressedMaterial = unpressedMat;
-            pressedMaterial = pressedMat;
+        isOn = !isOn;
+        UpdateColor();
 
-            // 🔥 Find GoatCameraModModelBetter/Menu
-            menu = transform.root.Find("GoatCamModObjects/Menu")?.gameObject;
-
-            if (menu != null)
-            {
-                menu.SetActive(false); // Hidden by default
-            }
-            else
-            {
-                Debug.LogError("[GoatCamMod] Could not find Menu!");
-            }
-        }
+        if (menu != null)
+            menu.SetActive(isOn);
     }
 }

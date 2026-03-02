@@ -1,112 +1,111 @@
-﻿using UnityEngine;
-using GorillaLocomotion;
+﻿using GorillaLocomotion;
+using UnityEngine;
 
-namespace GoatCamMod
+namespace GoatCamMod;
+
+public class ThirdPersonButton : GorillaPressableButton
 {
-    public class thirdpersonbutton : GorillaPressableButton
+    public static bool ThirdPersonActive;
+
+    public float   SmoothingSpeed    = 10f;
+    public Vector3 ThirdPersonOffset = new(0f, 0.2f, -1.5f);
+
+    private new MeshRenderer      buttonRenderer;
+    private     Camera            cam;
+    private     FirstPersonButton fpButton;
+
+    private GameObject goatCamModObject;
+    private bool       isThirdPerson;
+    private Vector3    originalLocalPosition;
+    private Quaternion originalLocalRotation;
+
+    private     Transform originalParent;
+    private new Material  pressedMaterial;
+    private new Material  unpressedMaterial;
+
+    public void Start()
     {
-        private Camera cam;
-        private bool isThirdPerson = false;
+        gameObject.layer = 18;
 
-        private Transform originalParent;
-        private Vector3 originalLocalPosition;
-        private Quaternion originalLocalRotation;
+        buttonRenderer    = GetComponent<MeshRenderer>();
+        unpressedMaterial = new Material(buttonRenderer.material) { color = Color.white, };
+        pressedMaterial   = new Material(buttonRenderer.material) { color = Color.red, };
 
-        public float smoothingSpeed = 10f;
-        public Vector3 thirdPersonOffset = new Vector3(0f, 0.2f, -1.5f);
+        goatCamModObject = GameObject.Find("GoatCameraModModelBetter(Clone)");
+        fpButton         = FindObjectOfType<FirstPersonButton>();
+    }
 
-        public static bool ThirdPersonActive = false;
+    public override void ButtonActivation()
+    {
+        base.ButtonActivation();
 
-        private GameObject goatCamModObject;
-        private firstpersonbutton fpButton;
+        isOn = !isOn;
+        UpdateColor();
 
-        private MeshRenderer buttonRenderer;
-        private Material unpressedMaterial;
-        private Material pressedMaterial;
-
-        public void Start()
+        if (cam == null)
         {
-            gameObject.layer = 18;
-
-            buttonRenderer = GetComponent<MeshRenderer>();
-            unpressedMaterial = new Material(buttonRenderer.material) { color = Color.white };
-            pressedMaterial = new Material(buttonRenderer.material) { color = Color.red };
-
-            goatCamModObject = GameObject.Find("GoatCameraModModelBetter(Clone)");
-            fpButton = FindObjectOfType<firstpersonbutton>();
-        }
-
-        public override void ButtonActivation()
-        {
-            base.ButtonActivation();
-
-            isOn = !isOn;
-            UpdateColor();
-
+            cam = transform.root.GetComponentInChildren<Camera>(true);
             if (cam == null)
             {
-                cam = transform.root.GetComponentInChildren<Camera>(true);
-                if (cam == null)
-                {
-                    Debug.LogError("[Monke Mod] No Camera found in prefab");
-                    return;
-                }
+                Debug.LogError("[Monke Mod] No Camera found in prefab");
 
-                originalParent = cam.transform.parent;
-                originalLocalPosition = cam.transform.localPosition;
-                originalLocalRotation = cam.transform.localRotation;
-            }
-
-            Transform head = GTPlayer.Instance.headCollider.transform;
-            if (head == null)
-            {
-                Debug.LogError("[Monke Mod] Could not find the local player's head");
                 return;
             }
 
-            if (!isThirdPerson)
-            {
-                // Disable first-person if active
-                if (fpButton != null)
-                    fpButton.DisableFirstPerson();
-
-                // Switch to third-person
-                cam.transform.SetParent(head);
-                cam.transform.localPosition = thirdPersonOffset;
-                cam.transform.localRotation = Quaternion.identity;
-
-                // Move GoatCamModObject to 0,0,0 like first-person button does
-                if (goatCamModObject != null)
-                    goatCamModObject.transform.position = Vector3.zero;
-
-                isThirdPerson = true;
-                ThirdPersonActive = true;
-                Debug.Log("[Monke Mod] Camera switched to third-person and moved object to (0,0,0)");
-            }
-            else
-            {
-                DisableThirdPerson();
-            }
+            originalParent        = cam.transform.parent;
+            originalLocalPosition = cam.transform.localPosition;
+            originalLocalRotation = cam.transform.localRotation;
         }
 
-        public void DisableThirdPerson()
+        Transform head = GTPlayer.Instance.headCollider.transform;
+        if (head == null)
         {
-            if (!isThirdPerson || cam == null) return;
+            Debug.LogError("[Monke Mod] Could not find the local player's head");
 
-            cam.transform.SetParent(originalParent);
-            cam.transform.localPosition = originalLocalPosition;
-            cam.transform.localRotation = originalLocalRotation;
-
-            isThirdPerson = false;
-            ThirdPersonActive = false;
-            UpdateColor();
-            Debug.Log("[Monke Mod] Third-person disabled");
+            return;
         }
 
-        private void UpdateColor()
+        if (!isThirdPerson)
         {
-            if (buttonRenderer == null) return;
-            buttonRenderer.material = isOn ? pressedMaterial : unpressedMaterial;
+            if (fpButton != null)
+                fpButton.DisableFirstPerson();
+
+            cam.transform.SetParent(head);
+            cam.transform.localPosition = ThirdPersonOffset;
+            cam.transform.localRotation = Quaternion.identity;
+
+            if (goatCamModObject != null)
+                goatCamModObject.transform.position = Vector3.zero;
+
+            isThirdPerson     = true;
+            ThirdPersonActive = true;
+            Debug.Log("[Monke Mod] Camera switched to third-person and moved object to (0,0,0)");
         }
+        else
+        {
+            DisableThirdPerson();
+        }
+    }
+
+    public void DisableThirdPerson()
+    {
+        if (!isThirdPerson || cam == null) return;
+
+        cam.transform.SetParent(originalParent);
+        cam.transform.localPosition = originalLocalPosition;
+        cam.transform.localRotation = originalLocalRotation;
+
+        isThirdPerson     = false;
+        ThirdPersonActive = false;
+        UpdateColor();
+        Debug.Log("[Monke Mod] Third-person disabled");
+    }
+
+    private void UpdateColor()
+    {
+        if (buttonRenderer == null)
+            return;
+
+        buttonRenderer.material = isOn ? pressedMaterial : unpressedMaterial;
     }
 }

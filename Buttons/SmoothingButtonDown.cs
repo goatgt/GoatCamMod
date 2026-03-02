@@ -1,34 +1,33 @@
 ﻿using UnityEngine;
 
-namespace GoatCamMod
+namespace GoatCamMod;
+
+public class SmoothingButtonDown : GorillaPressableButton
 {
-    public class smoothingbuttondown : GorillaPressableButton
+    private new MeshRenderer buttonRenderer;
+    private new Material     pressedMaterial;
+    private new Material     unpressedMaterial;
+
+    public void Start()
     {
-        private MeshRenderer buttonRenderer;
-        private Material unpressedMaterial;
-        private Material pressedMaterial;
+        gameObject.layer = 18;
 
-        public override void ButtonActivation()
-        {
-            isOn = !isOn;
-            UpdateColor();
+        buttonRenderer    = GetComponent<MeshRenderer>();
+        unpressedMaterial = new Material(buttonRenderer.material) { color = Color.white, };
+        pressedMaterial   = new Material(buttonRenderer.material) { color = Color.red, };
+    }
 
-            firstpersonbutton.CycleSmoothingModeBackward();
-        }
+    public override void ButtonActivation()
+    {
+        isOn = !isOn;
+        UpdateColor();
 
-        public void Start()
-        {
-            gameObject.layer = 18;
+        FirstPersonButton.CycleSmoothingModeBackward();
+    }
 
-            buttonRenderer = GetComponent<MeshRenderer>();
-            unpressedMaterial = new Material(buttonRenderer.material) { color = Color.white };
-            pressedMaterial = new Material(buttonRenderer.material) { color = Color.red };
-        }
-
-        private void UpdateColor()
-        {
-            if (buttonRenderer == null) return;
-            buttonRenderer.material = isOn ? pressedMaterial : unpressedMaterial;
-        }
+    private void UpdateColor()
+    {
+        if (buttonRenderer == null) return;
+        buttonRenderer.material = isOn ? pressedMaterial : unpressedMaterial;
     }
 }

@@ -1,70 +1,60 @@
 ﻿using UnityEngine;
 
-namespace GoatCamMod
+namespace GoatCamMod;
+
+public class NearClipButtonDown : GorillaPressableButton
 {
-    public class nearclipbuttondown : GorillaPressableButton
+    private Camera   cam;
+    private TextMesh nearText;
+
+    public void Start()
     {
-        private Camera cam;
-        private TextMesh nearText;
+        gameObject.layer = 18;
 
-        public override void ButtonActivation()
+        buttonRenderer    = GetComponent<MeshRenderer>();
+        unpressedMaterial = new Material(buttonRenderer.material) { color = Color.white, };
+        pressedMaterial   = new Material(buttonRenderer.material) { color = Color.red, };
+
+        GameObject textObj = GameObject.Find("Sample Textmesh (7)");
+        if (textObj != null)
         {
-            base.ButtonActivation();
+            nearText = textObj.GetComponent<TextMesh>();
+            if (nearText == null)
+                Debug.LogError("[Monke Mod] Sample Textmesh (7) does not have a TextMesh component!");
+        }
+        else
+        {
+            Debug.LogError("[Monke Mod] Could not find GameObject named 'Sample Textmesh (7)'");
+        }
+    }
 
-            Debug.Log("[Monke Mod] Pressed Near Down Button");
+    public override void ButtonActivation()
+    {
+        base.ButtonActivation();
 
-            isOn = !isOn;
-            UpdateColor();
+        Debug.Log("[Monke Mod] Pressed Near Down Button");
 
-            // Find Camera component anywhere in this prefab (once)
-            if (cam == null)
-            {
-                cam = transform.root.GetComponentInChildren<Camera>(true);
-                if (cam != null)
-                {
-                    Debug.Log("[Monke Mod] Camera component found");
-                }
-            }
+        isOn = !isOn;
+        UpdateColor();
 
-            if (cam == null)
-            {
-                Debug.LogError("[Monke Mod] NO Camera component found in prefab");
-                return;
-            }
-
-            // Decrease Near Clip Plane by 0.01, min 0.01
-            cam.nearClipPlane = Mathf.Clamp(cam.nearClipPlane - 0.01f, 0.01f, 0.1f);
-            Debug.Log("[Monke Mod] Near Clip Plane set to: " + cam.nearClipPlane);
-
-            // Update the TextMesh to show only the Near value
-            if (nearText != null)
-            {
-                nearText.text = cam.nearClipPlane.ToString("F2");
-            }
+        if (cam == null)
+        {
+            cam = transform.root.GetComponentInChildren<Camera>(true);
+            if (cam != null)
+                Debug.Log("[Monke Mod] Camera component found");
         }
 
-        public void Start()
+        if (cam == null)
         {
-            gameObject.layer = 18;
+            Debug.LogError("[Monke Mod] NO Camera component found in prefab");
 
-            buttonRenderer = GetComponent<MeshRenderer>();
-            unpressedMaterial = new Material(buttonRenderer.material) { color = Color.white };
-            pressedMaterial = new Material(buttonRenderer.material) { color = Color.red };
-
-            // Find the TextMesh component on the object named "Sample Textmesh (7)"
-            GameObject textObj = GameObject.Find("Sample Textmesh (7)");
-            if (textObj != null)
-            {
-                nearText = textObj.GetComponent<TextMesh>();
-                if (nearText == null)
-                {
-                    Debug.LogError("[Monke Mod] Sample Textmesh (7) does not have a TextMesh component!");
-                }
-            }
-            else
-            {
-                Debug.LogError("[Monke Mod] Could not find GameObject named 'Sample Textmesh (7)'");
-            }
+            return;
         }
+
+        cam.nearClipPlane = Mathf.Clamp(cam.nearClipPlane - 0.01f, 0.01f, 0.1f);
+        Debug.Log("[Monke Mod] Near Clip Plane set to: " + cam.nearClipPlane);
+
+        if (nearText != null)
+            nearText.text = cam.nearClipPlane.ToString("F2");
     }
 }

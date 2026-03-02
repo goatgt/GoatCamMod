@@ -1,70 +1,60 @@
 ﻿using UnityEngine;
 
-namespace GoatCamMod
+namespace GoatCamMod;
+
+public class FovButtonUp : GorillaPressableButton
 {
-    public class fovbuttonup : GorillaPressableButton
+    private Camera   cam;
+    private TextMesh fovText;
+
+    public void Start()
     {
-        private Camera cam;
-        private TextMesh fovText;
+        gameObject.layer = 18;
 
-        public override void ButtonActivation()
+        buttonRenderer    = GetComponent<MeshRenderer>();
+        unpressedMaterial = new Material(buttonRenderer.material) { color = Color.white, };
+        pressedMaterial   = new Material(buttonRenderer.material) { color = Color.red, };
+
+        GameObject textObj = GameObject.Find("Sample Textmesh (9)");
+        if (textObj != null)
         {
-            base.ButtonActivation();
+            fovText = textObj.GetComponent<TextMesh>();
+            if (fovText == null)
+                Debug.LogError("[Monke Mod] Sample Textmesh (9) does not have a TextMesh component!");
+        }
+        else
+        {
+            Debug.LogError("[Monke Mod] Could not find GameObject named 'Sample Textmesh (9)'");
+        }
+    }
 
-            Debug.Log("[Monke Mod] Pressed FOV Up Button");
+    public override void ButtonActivation()
+    {
+        base.ButtonActivation();
 
-            isOn = !isOn;
-            UpdateColor();
+        Debug.Log("[Monke Mod] Pressed FOV Up Button");
 
-            // Find Camera component anywhere in this prefab (once)
-            if (cam == null)
-            {
-                cam = transform.root.GetComponentInChildren<Camera>(true);
-                if (cam != null)
-                {
-                    Debug.Log("[Monke Mod] Camera component found");
-                }
-            }
+        isOn = !isOn;
+        UpdateColor();
 
-            if (cam == null)
-            {
-                Debug.LogError("[Monke Mod] NO Camera component found in prefab");
-                return;
-            }
-
-            // Increase FOV by 5, but cap at 120
-            cam.fieldOfView = Mathf.Min(cam.fieldOfView + 5f, 120f);
-            Debug.Log("[Monke Mod] FOV set to: " + cam.fieldOfView);
-
-            // Update the TextMesh text to show only the number
-            if (fovText != null)
-            {
-                fovText.text = Mathf.RoundToInt(cam.fieldOfView).ToString();
-            }
+        if (cam == null)
+        {
+            cam = transform.root.GetComponentInChildren<Camera>(true);
+            if (cam != null)
+                Debug.Log("[Monke Mod] Camera component found");
         }
 
-        public void Start()
+        if (cam == null)
         {
-            gameObject.layer = 18;
+            Debug.LogError("[Monke Mod] NO Camera component found in prefab");
 
-            buttonRenderer = GetComponent<MeshRenderer>();
-            unpressedMaterial = new Material(buttonRenderer.material) { color = Color.white };
-            pressedMaterial = new Material(buttonRenderer.material) { color = Color.red };
-
-            // Find the TextMesh component on the object named "Sample Textmesh (9)"
-            GameObject textObj = GameObject.Find("Sample Textmesh (9)");
-            if (textObj != null)
-            {
-                fovText = textObj.GetComponent<TextMesh>();
-                if (fovText == null)
-                {
-                    Debug.LogError("[Monke Mod] Sample Textmesh (9) does not have a TextMesh component!");
-                }
-            }
-            else
-            {
-                Debug.LogError("[Monke Mod] Could not find GameObject named 'Sample Textmesh (9)'");
-            }
+            return;
         }
+
+        cam.fieldOfView = Mathf.Min(cam.fieldOfView + 5f, 120f);
+        Debug.Log("[Monke Mod] FOV set to: " + cam.fieldOfView);
+
+        if (fovText != null)
+            fovText.text = Mathf.RoundToInt(cam.fieldOfView).ToString();
     }
 }

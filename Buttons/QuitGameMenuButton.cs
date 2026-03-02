@@ -1,68 +1,61 @@
 ﻿using UnityEngine;
 
-namespace GoatCamMod
+namespace GoatCamMod;
+
+public class GuitGameMenuButton : GorillaPressableButton
 {
-    public class quitgamemenubutton : GorillaPressableButton
+    private GameObject quitGameMenu;
+
+    private void Start()
     {
-        private GameObject quitGameMenu;
+        gameObject.layer = 18;
 
-        public override void ButtonActivation()
+        buttonRenderer = GetComponent<MeshRenderer>();
+
+        Material unpressedMat = new(buttonRenderer.material)
         {
-            Debug.Log("[GoatCamMod] Quit Menu Button Pressed");
+                color = Color.white,
+        };
 
-            isOn = !isOn;
-            UpdateColor();
-
-            if (quitGameMenu != null)
-            {
-                quitGameMenu.SetActive(isOn);
-            }
-            else
-            {
-                Debug.LogError("[GoatCamMod] QuitGameMenu is STILL NULL!");
-            }
-        }
-
-        void Start()
+        Material pressedMat = new(buttonRenderer.material)
         {
-            this.gameObject.layer = 18;
+                color = Color.red,
+        };
 
-            buttonRenderer = GetComponent<MeshRenderer>();
+        unpressedMaterial = unpressedMat;
+        pressedMaterial   = pressedMat;
 
-            Material unpressedMat = new Material(buttonRenderer.material)
+        GameObject[] allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
+
+        foreach (GameObject obj in allObjects)
+            if (obj.name == "QuitGameMenu")
             {
-                color = Color.white
-            };
+                quitGameMenu = obj;
 
-            Material pressedMat = new Material(buttonRenderer.material)
-            {
-                color = Color.red
-            };
-
-            unpressedMaterial = unpressedMat;
-            pressedMaterial = pressedMat;
-
-            // 🔥 Find QuitGameMenu EVEN IF DISABLED
-            GameObject[] allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
-
-            foreach (GameObject obj in allObjects)
-            {
-                if (obj.name == "QuitGameMenu")
-                {
-                    quitGameMenu = obj;
-                    break;
-                }
+                break;
             }
 
-            if (quitGameMenu != null)
-            {
-                quitGameMenu.SetActive(false); // hidden by default
-                Debug.Log("[GoatCamMod] QuitGameMenu found successfully.");
-            }
-            else
-            {
-                Debug.LogError("[GoatCamMod] Could not find QuitGameMenu anywhere in scene!");
-            }
+        if (quitGameMenu != null)
+        {
+            quitGameMenu.SetActive(false);
+            Debug.Log("[GoatCamMod] QuitGameMenu found successfully.");
         }
+        else
+        {
+            Debug.LogError("[GoatCamMod] Could not find QuitGameMenu anywhere in scene!");
+        }
+    }
+
+    public override void ButtonActivation()
+    {
+        Debug.Log("[GoatCamMod] Quit Menu Button Pressed");
+
+        isOn = !isOn;
+        UpdateColor();
+
+        if (quitGameMenu != null)
+            quitGameMenu.SetActive(isOn);
+        else
+            Debug.LogError("[GoatCamMod] QuitGameMenu is STILL NULL!");
     }
 }
